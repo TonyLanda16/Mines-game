@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Mines Game</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #121212; color: white; text-align: center; margin: 0; }
+    h1 { margin-top: 10px; }
+    #board { display: grid; grid-template-columns: repeat(5, 70px); gap: 8px; justify-content: center; margin-top: 20px; }
+    .tile {
+        width: 70px; height: 70px; background: #1e1e1e; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; cursor: pointer; transition: background 0.2s, transform 0.1s;
+    }
+    .tile:active { transform: scale(0.95); }
+    .revealed { background: #2ecc71 !important; }
+    .mine { background: #e74c3c !important; }
+    button {
+        padding: 12px 18px; font-size: 16px; margin: 8px; border: none;
+        border-radius: 6px; cursor: pointer; font-weight: bold; color: white;
+    }
+    .play-btn { background: #3498db; }
+    .cash-btn { background: #f1c40f; color: black; }
+    input { padding: 6px; font-size: 16px; width: 80px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>💣 Mines Game</h1>
+<p>Bet: $<input type="number" id="bet" value="10" min="1"></p>
+<p>Balance: $<span id="balance">100</span></p>
+<button class="play-btn" onclick="startGame()">Play</button>
+<button class="cash-btn" onclick="cashOut()">Cash Out</button>
+
+<div id="board"></div>
+
+<p id="status"></p>
+
+<audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-click-1114.mp3"></audio>
+<audio id="mineSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.wav"></audio>
+<audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+
+<script>
+let balance = 100;
+let bet = 0;
+let mines = [];
+let revealedCount = 0;
+let playing = false;
+let tiles = [];
+
+function playSound(id) {
+    document.getElementById(id).currentTime = 0;
+    document.getElementById(id).play();
+}
+
+function startGame() {
+    bet = parseFloat(document.getElementById("bet").value);
+    if (bet > balance || bet <= 0) {
+        alert("Invalid bet");
+        return;
+    }
+    balance -= bet;
+    updateBalance();
+    document.getElementById("status").innerText = "Game started! Tap a tile.";
+    playing = true;
+    revealedCount = 0;
+
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+    tiles = [];
+    mines = [];
+    for (let i = 0; i < 25; i++) {
+        const div = document.createElement("div");
+        div.classList.add("tile");
+        div.onclick = () => revealTile(i);
+        tiles.push(div);
+        board.appendChild(div);
+    }
+
+    while (mines.length < 5) {
+        let r = Math.floor(Math.random() * 25);
+        if (!mines.includes(r)) mines.push(r);
+    }
+}
+
+function revealTile(index) {
+    if (!playing) return;
+    const tile = tiles[index];
+    if (tile.classList.contains("revealed")) return;
+
+    playSound("clickSound");
+
+    if (mines.includes(index)) {
+        tile.classList.add("mine");
+        tile.innerText = "💣";
+        playSound("mineSound");
+        endGame(false);
+    } else {
+        tile.classList.add("revealed");
+        tile.innerText = "✅";
+        revealedCount++;
+    }
+}
+
+function cashOut() {
+    if (!playing) return;
+    let winnings = bet + (bet * revealedCount * 0.25);
+    balance += winnings;
+    updateBalance();
+    playSound("winSound");
+    endGame(true, winnings);
+}
+
+function endGame(won, winnings=0) {
+    playing = false;
+    document.getElementById("status").innerText = won ? 
+        `✅ You cashed out $${winnings.toFixed(2)}!` : "💥 You hit a mine!";
+}
+
+function updateBalance() {
+    document.getElementById("balance").innerText = balance.toFixed(2);
+}
+</script>
+
+</body>
+</html>
